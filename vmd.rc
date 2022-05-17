@@ -1,0 +1,240 @@
+############################################################################
+#cr                                                                       
+#cr            (C) Copyright 1995-2007 The Board of Trustees of the            
+#cr                        University of Illinois                         
+#cr                         All Rights Reserved                           
+#cr                                                                       
+############################################################################
+
+############################################################################
+# RCS INFORMATION:
+#
+#       $RCSfile: .vmdrc,v $
+#       $Author: johns $        $Locker:  $                $State: Exp $
+#       $Revision: 1.9 $      $Date: 2007/01/12 20:12:44 $
+#
+############################################################################
+# DESCRIPTION:
+#
+# VMD startup script.  The commands here are executed as soon as VMD starts up
+############################################################################
+
+# turn on lights 0 and 1
+light 0 on
+light 1 on
+light 2 off
+light 3 off
+
+# position the stage and axes
+axes location lowerleft
+stage location off
+
+# position and turn on menus
+menu main     move 5 600
+menu display  move 395 30
+menu graphics move 395 500
+menu color    move 125 225
+menu files    move 125 325
+menu labels   move 125 525
+menu render   move 125 525
+
+menu main      on
+#menu display  on
+#menu graphics on
+#menu color    on
+#menu labels   on
+#menu render   on
+#menu files    on
+
+# start the scene a-rockin'
+# rock y by 1
+
+# User's default values for newly loaded molecules/reps, etc
+#  mol default color {colorID 5}
+#  mol default style {NewCartoon 0.300000 6.000000 4.100000 0}
+#  mol default selection {name CA}
+#  mol default material {Transparent}
+
+color Display Background white
+display projection Orthographic
+display depthcue off
+display rendermode GLSL
+color Name C silver
+color Type C black
+
+proc protein {} {
+delallrep
+mol addrep top
+mol modselect 0 top protein
+mol modstyle 0 top Cartoon
+mol modmaterial 0 top Opaque
+mol modcolor 0 top Chain
+
+mol addrep top
+mol modselect 1 top {not protein and not water}
+mol modstyle 1 top VDW
+mol modmaterial 1 top Opaque
+mol modcolor 1 top Name
+
+mol addrep top
+mol modselect 2 top water
+mol modstyle 2 top Licorice
+mol modmaterial 2 top Opaque
+mol modcolor 2 top Name
+}
+
+proc complex2 {} {
+delallrep
+mol addrep top
+mol modselect 0 top residue 0
+mol modstyle 0 top Licorice 0.2
+mol modmaterial 0 top Opaque
+mol modcolor 0 top Name
+
+mol addrep top
+mol modselect 1 top residue 1
+mol modstyle 1 top CPK 0.5 0.3
+mol modmaterial 1 top Opaque
+mol modcolor 1 top Type
+
+mol addrep top
+mol modselect 2 top residue 1
+mol modstyle 2 top Surf
+mol modmaterial 2 top Transparent
+mol modcolor 2 top ColorID 10
+}
+
+proc delallrep {} {
+set j [molinfo top get numreps]
+for {set i 0} {$i < $j} {incr i} {
+mol delrep 0 top
+}
+}
+
+proc renderall {} {
+set j [string range [molinfo top get name] 0 end-4]
+set directions {x y z}
+foreach direction $directions {
+        for {set i 0} {$i < 8} {incr i} {
+                set k $j-$direction-[expr $i * 45]
+                render Tachyon $k.dat "C:/vmd/tachyon_WIN32.exe" -mediumshade -trans_vmd -res 2048 1536 -aasamples 24 %s -format bmp -o $k.bmp
+                rotate $direction by 45
+                }
+        }
+file delete {*}[glob -nocomplain *.dat]
+}
+
+proc renderone {} {
+set j [string range [molinfo top get name] 0 end-4]
+render Tachyon $j.dat "C:/vmd/tachyon_WIN32.exe" -mediumshade -trans_vmd -res 2048 1536 -aasamples 24 %s -format bmp -o $j.bmp
+file delete {*}[glob -nocomplain *.dat]
+}
+
+proc drawigm {} {
+delallrep
+mol addrep top
+mol modselect 0 top residue 0
+mol modstyle 0 top Licorice 0.1
+mol modmaterial 0 top Opaque
+mol modcolor 0 top Name
+
+mol addrep top
+mol modselect 1 top residue 1
+mol modstyle 1 top CPK 0.5 0.3
+mol modmaterial 1 top Opaque
+mol modcolor 1 top Type
+
+mol addrep top
+mol modstyle 2 top Isosurface 0.005000 1 0 0 1 1
+mol modcolor 2 top Volume 0
+mol scaleminmax top 2 -0.04 0.04
+color scale method BGR
+}
+
+proc igm {} {
+mol new sl2r.cub
+mol addfile dg_inter.cub
+drawigm
+}
+
+proc drawmep {} {
+color scale method BWR
+material change transmode EdgyGlass 1.0
+material change specular EdgyGlass 0.15
+material change shininess EdgyGlass 0.95
+material change opacity EdgyGlass 0.7
+material change outlinewidth EdgyGlass 0.9
+material change outline EdgyGlass 0.5
+
+delallrep
+mol addrep top
+mol modstyle 0 top CPK 1.0 0.3 22.0 22.0
+mol modmaterial 0 top Opaque
+mol modcolor 0 top Name
+
+mol addrep top
+mol modstyle 1 top Isosurface 0.001 0 0 0 1 1
+mol modmaterial 1 top EdgyGlass
+mol modcolor 1 top Volume 1
+mol scaleminmax top 1 -0.03 0.03
+}
+
+proc mep {} {
+mol new density.cub
+mol addfile totesp.cub
+drawmep
+}
+
+proc showbox {} {
+package require pbctools
+pbc box
+}
+
+proc renderbox {} {
+rotate x by 5
+rotate y by 15
+rotate z by 5
+renderone
+rotate x by 10
+rotate y by -10
+renderone
+}
+
+proc hbond {} {
+delallrep
+mol addrep top
+mol modselect 0 top residue 0 and withinbonds 1 of nitrogen
+mol modstyle 0 top Licorice 0.15
+mol modmaterial 0 top BrushedMetal
+mol modcolor 0 top Name
+
+mol addrep top
+mol modselect 1 top residue 1
+mol modstyle 1 top CPK 0.7 0.3
+mol modmaterial 1 top BrushedMetal
+mol modcolor 1 top Type
+
+mol addrep top
+mol modselect 2 top residue 1
+mol modstyle 2 top PaperChain 0.1 15.0
+mol modmaterial 2 top Glass1
+
+mol addrep top
+mol modselect 3 top all
+mol modstyle 3 top HBonds 3.0 35.0 3.0
+mol modmaterial 3 top Opaque
+mol modcolor 3 top ColorID 7
+}
+
+proc outputres0serial {} {
+set index [[atomselect top "residue 0"] list]
+set serial []
+foreach i $index {
+set j [expr 1 + $i]
+lappend serial $j
+}
+set f [open "serial.txt" w+]
+puts $f $serial
+close $f
+}
+
